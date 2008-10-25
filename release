@@ -19,10 +19,27 @@ import fileinput
 import optparse
 import os
 import re
+import subprocess
+import sys
 
+upload_host = 'dev.laptop.org'
+upload_root = '/var/www/sugar/sources'
 base_dir = os.getcwd()
 
 class Release(object):
+    def __init__(self):
+        self.name = None
+        self.version = None
+
+    def read_config(self):
+        config = open(self.config_path).read()
+
+        m = re.search(self.name_regexp, config)
+        self.name = m.group(1)
+
+        m = re.search(self.version_regexp, config)
+        self.version = m.group(1)
+
     def next_version(self, current):
         splitted = current.split('.')
         new_minor = int(splitted[-1]) + 1
@@ -30,22 +47,68 @@ class Release(object):
 
         return '.'.join(splitted)
 
-class ActivityRelease(Release):
     def bump_version(self, version):
-        pass
+        config = open(self.config_path).read()
 
-class AutomakeRelease(Release):
-    def bump_version(self, version):
-        path = os.path.join(base_dir, 'configure.ac')
-        config = open(path).read()
-
-        m = re.match('AC_INIT\(\[.*?\],\[(.*?)\]', config)
+        m = re.search(self.version_regexp, config)
         if m:
             if version is None:
                 version = self.next_version(m.group(1))
             config = config[:m.start(1)] + version + config[m.end(1):]
 
-        open(path, "w").write(config)
+        open(self.config_path, "w").write(config)
+
+        self.version = version
+
+    def undo_version(self):
+        subprocess.check_call(['git', 'checkout', self.config_path])
+
+    def tag(self):
+        message = 'Release %s' % self.version
+
+        subprocess.check_call(['git', 'commit', '-a', '-m' , '"%s"' % message])
+        subprocess.check_call(['git', 'tag', 'v%s' % self.version])
+
+        subprocess.check_call(['git', 'push'])
+        subprocess.check_call(['git', 'push', '--tags'])
+
+    def build_tarball(self):
+        ret = subprocess.call(self.tarball_command)
+        return ret == 0
+
+    def get_tarball_name(self):
+        return '%s-%s.tar.bz2' % (self.name, self.version)
+
+    def get_tarball_path(self):
+        return os.path.join(base_dir, self.get_tarball_name())
+
+    def upload(self):
+        upload_path = self.path.join(upload_root, self.name)
+        upload_dest = upload_path + ':' + upload_path
+        subprocess.check_call(['scp', self.get_tarball_path(), upload_dest])
+
+class ActivityRelease(Release):
+    def __init__(self):
+        Release.__init__(self)
+
+        setup_path = os.path.join(base_dir, 'setup.py')
+
+        self.config_path = os.path.join(base_dir, 'activity', 'activity.info')
+        self.name_regexp = 'name\s*=\s*(.*)'
+        self.version_regexp = 'activity_version\s*=\s*(.*)'
+        self.tarball_command = [setup_path, 'dist_source']
+
+    def get_tarball_path(self):
+        return os.path.join(base_dir, 'dist', self.get_tarball_name())
+
+class AutomakeRelease(Release):
+    def __init__(self):
+        Release.__init__(self)
+
+        self.config_path = os.path.join(base_dir, 'configure.ac')
+        self.name_regexp = 'AC_INIT\(\[(.*?)\]'
+        self.version_regexp = 'AC_INIT\(\[.*?\],\[(.*?)\]'
+        self.tarball_command = ['make', 'distcheck']
 
 def main():
     parser = optparse.OptionParser()
@@ -60,7 +123,21 @@ def main():
     else:
         print 'Unknow module type.'
 
+    release.read_config()
+
     print 'Bump version number...'
     release.bump_version(options.version)
+
+    print 'Build source tarball...'
+    if not release.build_tarball():
+        print 'Failed to build source tarball.'
+        release.undo_version()
+        sys.exit(1)
+
+    print 'Tag the release in git...'
+    release.tag()
+
+    print 'Upload the source tarball...'
+    release.upload()
 
 main()
