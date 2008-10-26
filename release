@@ -15,16 +15,101 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+import csv
+import feedparser
 import fileinput
+import formatter
+import gtk
+import htmllib
 import optparse
 import os
 import re
+import smtplib
 import subprocess
 import sys
+import urllib
+import StringIO
 
-upload_host = 'dev.laptop.org'
+upload_host = 'marco@dev.laptop.org'
 upload_root = '/var/www/sugar/sources'
-base_dir = os.getcwd()
+download_uri = 'http://dev.laptop.org/pub/sugar/sources/'
+announce_to = 'mpgritti@gmail.com'
+announce_from = 'mpgritti@gmail.com'
+
+class ReleaseReport(object):
+    def __init__(self, version):
+        self.version = version
+        self.tickets = []
+        self.testcases = []
+
+    def generate(self):
+        p = subprocess.Popen(['git', 'tag'], stdout=subprocess.PIPE)
+        tags = p.stdout.read().split('\n')
+        tags = [ tag for tag in tags if tag.startswith('v') ]
+
+        release_tag = 'v' + self.version
+        try:
+            i = tags.index(release_tag)
+        except ValueError:
+            print 'The tag you provided does not exist.'
+            return
+
+        if i > 0:
+            previous = tags[i - 1]
+            interval = previous + '..' + release_tag
+        else:
+            interval = release_tag
+
+        p = subprocess.Popen(['git', 'log', interval,
+                              '--pretty=format:%an|||%s'],
+                             stdout=subprocess.PIPE)
+        commits = p.stdout.read().split('\n')
+
+        tickets = []
+        for row in commits:
+            author, subject = row.split('|||')
+
+            match = re.search("\#([0-9]*)", subject)
+            if match:
+                tickets.append(match.group(1))
+
+        tickets = tickets[:1]
+
+        for n in tickets:
+            f = urllib.urlopen('http://dev.laptop.org/ticket/%s?format=csv' % n)
+
+            reader = csv.DictReader(f)
+            row = reader.next()
+
+            ticket = { 'number'  : row['id'],
+                       'summary' : row['summary'] }
+            self.tickets.append(ticket)
+    
+            f.close()
+
+            url = 'http://dev.laptop.org/ticket/%s?format=rss' % n
+
+            parser = feedparser.parse(url)
+
+            for entry in parser.entries:
+                out = StringIO.StringIO()
+
+                writer = formatter.DumbWriter(out)
+                form = formatter.AbstractFormatter(writer)
+
+                html_parser = htmllib.HTMLParser(form)
+                html_parser.feed(entry['summary_detail']['value'])
+                html_parser.close()
+
+                comment = out.getvalue().strip()
+
+                out.close()
+
+                marker = '|testcase|'
+                i = comment.lower().find(marker)
+                if i >= 0:
+                    i += len(marker)
+                    self.testcases.append([n, comment[i:].strip()])
 
 class Release(object):
     def __init__(self):
@@ -80,7 +165,7 @@ class Release(object):
         return '%s-%s.tar.bz2' % (self.name, self.version)
 
     def get_tarball_path(self):
-        return os.path.join(base_dir, self.get_tarball_name())
+        return self.get_tarball_name()
 
     def upload(self):
         upload_path = os.path.join(upload_root, self.name)
@@ -89,25 +174,81 @@ class Release(object):
         subprocess.check_call(['ssh', upload_host, 'mkdir', '-p', upload_path])
         subprocess.check_call(['scp', self.get_tarball_path(), upload_dest])
 
+    def announce(self):
+        out = StringIO.StringIO()
+
+        out.write('== Source ==\n\n')
+        path = os.path.join(self.name, self.get_tarball_name())
+        out.write(download_uri + path + '\n')
+
+        report = ReleaseReport(self.version)
+        report.generate()
+
+        if report.tickets:
+            out.write('\n== Fixed tickets ==\n\n')
+
+            for ticket in report.tickets:
+                number = ticket['number']
+                summary = ticket['summary']
+
+                out.write('* #%s %s\n' % (number, summary))
+
+        if report.testcases:
+            out.write('\n== Test cases ==')
+
+            for number, testcase in report.testcases:
+                out.write('#%s\n\n%s\n\n\n' % (number, testcase))
+
+        announce = out.getvalue()
+        out.close()
+
+        dialog = gtk.Dialog()
+        dialog.set_default_size(400, 400)
+        dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                           'Announce', gtk.RESPONSE_OK)
+
+        text_view = gtk.TextView()
+        text_view.get_buffer().set_text(announce)
+        dialog.vbox.pack_start(text_view)
+        text_view.show()
+
+        if dialog.run() == gtk.RESPONSE_OK:
+            buf = text_view.get_buffer()
+            text = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
+            subject = '[RELEASE] %s-%s' % (self.name, self.version)
+
+            announce_filename = '.sugar-announce'
+            f = open(announce_filename, 'w')
+            f.write('From: %s<%s>\nTo: %s\nSubject: %s\n%s' % \
+                    (announce_from, announce_from, announce_to, subject, text))
+            f.close()
+
+            subprocess.check_call(['scp', announce_filename,
+                                   upload_host + ':~'])
+            subprocess.check_call(['ssh', upload_host,
+                                   'sendmail', '-t', '<', announce_filename])
+            subprocess.check_call(['ssh', upload_host,
+                                   'rm', announce_filename])
+
+            os.unlink(announce_filename)
+
 class ActivityRelease(Release):
     def __init__(self):
         Release.__init__(self)
 
-        setup_path = os.path.join(base_dir, 'setup.py')
-
-        self.config_path = os.path.join(base_dir, 'activity', 'activity.info')
+        self.config_path = os.path.join('activity', 'activity.info')
         self.name_regexp = 'name\s*=\s*(.*)'
         self.version_regexp = 'activity_version\s*=\s*(.*)'
-        self.tarball_command = [setup_path, 'dist_source']
+        self.tarball_command = ['./setup.py', 'dist_source']
 
     def get_tarball_path(self):
-        return os.path.join(base_dir, 'dist', self.get_tarball_name())
+        return os.path.join('dist', self.get_tarball_name())
 
 class AutomakeRelease(Release):
     def __init__(self):
         Release.__init__(self)
 
-        self.config_path = os.path.join(base_dir, 'configure.ac')
+        self.config_path = 'configure.ac'
         self.name_regexp = 'AC_INIT\(\[(.*?)\]'
         self.version_regexp = 'AC_INIT\(\[.*?\],\[(.*?)\]'
         self.tarball_command = ['make', 'distcheck']
@@ -118,9 +259,9 @@ def main():
                       help='Release version')
     (options, args) = parser.parse_args()
 
-    if os.path.exists(os.path.join(base_dir, 'configure.ac')):
+    if os.path.exists('configure.ac'):
         release = AutomakeRelease()
-    elif os.path.exists(os.path.join(base_dir, 'setup.py')):
+    elif os.path.exists('setup.py'):
         release = ActivityRelease()
     else:
         print 'Unknow module type.'
@@ -131,18 +272,21 @@ def main():
     release.bump_version(options.version)
 
     print 'Build source tarball...'
-    if not release.build_tarball():
-        print 'Failed to build source tarball.'
-        release.undo_version()
-        sys.exit(1)
+    #if not release.build_tarball():
+    #    print 'Failed to build source tarball.'
+    #    release.undo_version()
+    #    sys.exit(1)
 
     print 'Tag the release in git...'
     release.tag()
 
     print 'Push the changes to remote git...'
-    release.push()
+    #release.push()
 
     print 'Upload the source tarball...'
-    release.upload()
+    #release.upload()
+
+    print 'Announce the release...'
+    release.announce()
 
 main()
