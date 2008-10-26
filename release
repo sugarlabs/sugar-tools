@@ -51,10 +51,9 @@ class Release(object):
         config = open(self.config_path).read()
 
         m = re.search(self.version_regexp, config)
-        if m:
-            if version is None:
-                version = self.next_version(m.group(1))
-            config = config[:m.start(1)] + version + config[m.end(1):]
+        if version is None:
+            version = self.next_version(m.group(1))
+        config = config[:m.start(1)] + version + config[m.end(1):]
 
         open(self.config_path, "w").write(config)
 
@@ -69,6 +68,7 @@ class Release(object):
         subprocess.check_call(['git', 'commit', '-a', '-m' , '"%s"' % message])
         subprocess.check_call(['git', 'tag', 'v%s' % self.version])
 
+    def push(self):
         subprocess.check_call(['git', 'push'])
         subprocess.check_call(['git', 'push', '--tags'])
 
@@ -83,8 +83,10 @@ class Release(object):
         return os.path.join(base_dir, self.get_tarball_name())
 
     def upload(self):
-        upload_path = self.path.join(upload_root, self.name)
-        upload_dest = upload_path + ':' + upload_path
+        upload_path = os.path.join(upload_root, self.name)
+        upload_dest = upload_host + ':' + upload_path
+
+        subprocess.check_call(['ssh', upload_host, 'mkdir', '-p', upload_path])
         subprocess.check_call(['scp', self.get_tarball_path(), upload_dest])
 
 class ActivityRelease(Release):
@@ -136,6 +138,9 @@ def main():
 
     print 'Tag the release in git...'
     release.tag()
+
+    print 'Push the changes to remote git...'
+    release.push()
 
     print 'Upload the source tarball...'
     release.upload()
