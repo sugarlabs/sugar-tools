@@ -73,8 +73,6 @@ class ReleaseReport(object):
             if match:
                 tickets.append(match.group(1))
 
-        tickets = tickets[:1]
-
         for n in tickets:
             f = urllib.urlopen('http://dev.laptop.org/ticket/%s?format=csv' % n)
 
@@ -272,19 +270,19 @@ def main():
     release.bump_version(options.version)
 
     print 'Build source tarball...'
-    #if not release.build_tarball():
-    #    print 'Failed to build source tarball.'
-    #    release.undo_version()
-    #    sys.exit(1)
+    if not release.build_tarball():
+        print 'Failed to build source tarball.'
+        release.undo_version()
+        sys.exit(1)
 
     print 'Tag the release in git...'
     release.tag()
 
     print 'Push the changes to remote git...'
-    #release.push()
+    release.push()
 
     print 'Upload the source tarball...'
-    #release.upload()
+    release.upload()
 
     print 'Announce the release...'
     release.announce()
