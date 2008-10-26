@@ -30,11 +30,10 @@ import sys
 import urllib
 import StringIO
 
-upload_host = 'marco@dev.laptop.org'
+upload_host = 'dev.laptop.org'
 upload_root = '/var/www/sugar/sources'
 download_uri = 'http://dev.laptop.org/pub/sugar/sources/'
-announce_to = 'mpgritti@gmail.com'
-announce_from = 'mpgritti@gmail.com'
+announce_to = 'sugar@laptop.org'
 
 class ReleaseReport(object):
     def __init__(self, version):
@@ -113,6 +112,13 @@ class Release(object):
     def __init__(self):
         self.name = None
         self.version = None
+
+        user, err = subprocess.Popen(['git', 'config', 'user.name'],
+                                     stdout=subprocess.PIPE).communicate()
+        email, err = subprocess.Popen(['git', 'config', 'user.email'],
+                                      stdout=subprocess.PIPE).communicate()
+
+        self.email = '%s <%s>' % (user, email)
 
     def read_config(self):
         config = open(self.config_path).read()
@@ -217,8 +223,8 @@ class Release(object):
 
             announce_filename = '.sugar-announce'
             f = open(announce_filename, 'w')
-            f.write('From: %s<%s>\nTo: %s\nSubject: %s\n%s' % \
-                    (announce_from, announce_from, announce_to, subject, text))
+            f.write('From: %s\nTo: %s\nSubject: %s\n%s' % \
+                    (self.email, announce_to, subject, text))
             f.close()
 
             subprocess.check_call(['scp', announce_filename,
