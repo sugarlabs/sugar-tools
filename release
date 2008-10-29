@@ -152,7 +152,7 @@ class Release(object):
         subprocess.check_call(['git', 'checkout', self.config_path])
 
     def tag(self):
-        message = 'Release %s' % self.version
+        message = 'Release version %s' % self.version
 
         subprocess.check_call(['git', 'commit', '-a', '-m' , '"%s"' % message])
         subprocess.check_call(['git', 'tag', 'v%s' % self.version])
