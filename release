@@ -175,7 +175,8 @@ class Release(object):
         upload_path = os.path.join(upload_root, self.name)
         upload_dest = upload_host + ':' + upload_path
 
-        subprocess.check_call(['ssh', upload_host, 'mkdir', '-p', upload_path])
+        subprocess.check_call(['ssh', upload_host, 'mkdir', '-m', '775',
+                               '-p', upload_path])
         subprocess.check_call(['scp', self.get_tarball_path(), upload_dest])
 
     def announce(self):
