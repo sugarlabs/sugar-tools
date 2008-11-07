@@ -113,12 +113,12 @@ class Release(object):
         self.name = None
         self.version = None
 
-        user, err = subprocess.Popen(['git', 'config', 'user.name'],
-                                     stdout=subprocess.PIPE).communicate()
-        email, err = subprocess.Popen(['git', 'config', 'user.email'],
+        user, err_ = subprocess.Popen(['git', 'config', 'user.name'],
                                       stdout=subprocess.PIPE).communicate()
+        email, err_ = subprocess.Popen(['git', 'config', 'user.email'],
+                                       stdout=subprocess.PIPE).communicate()
 
-        self.email = '%s <%s>' % (user, email)
+        self.email = '%s <%s>' % (user.strip('\n'), email.strip('\n'))
 
     def read_config(self):
         config = open(self.config_path).read()
@@ -128,6 +128,19 @@ class Release(object):
 
         m = re.search(self.version_regexp, config)
         self.version = m.group(1)
+
+    def check_version(self):
+        p = subprocess.Popen(['git', 'tag'], stdout=subprocess.PIPE)
+        tags = p.stdout.read().split('\n')
+        tags = [tag for tag in tags if tag != '' ]
+        latest_tag = tags[-1]
+        if latest_tag.startswith('v'):
+            latest_tag = latest_tag[1:]
+        if latest_tag != self.version:
+            print 'Warning: Tag (%s) does not match version number (%s)' \
+                % (latest_tag, self.version)
+            print 'You can use the --version option to force a specific version'
+            sys.exit(1)
 
     def next_version(self, current):
         splitted = current.split('.')
@@ -152,9 +165,9 @@ class Release(object):
         subprocess.check_call(['git', 'checkout', self.config_path])
 
     def tag(self):
-        message = 'Release version %s' % self.version
+        message = 'Release %s' % self.version
 
-        subprocess.check_call(['git', 'commit', '-a', '-m' , '"%s"' % message])
+        subprocess.check_call(['git', 'commit', '-a', '-m' , '%s' % message])
         subprocess.check_call(['git', 'tag', 'v%s' % self.version])
 
     def push(self):
@@ -212,10 +225,17 @@ class Release(object):
         dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                            'Announce', gtk.RESPONSE_OK)
 
+        scrolledwindow = gtk.ScrolledWindow()
+        scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC,
+                                  gtk.POLICY_AUTOMATIC)
+
         text_view = gtk.TextView()
         text_view.get_buffer().set_text(announce)
-        dialog.vbox.pack_start(text_view)
+        scrolledwindow.add_with_viewport(text_view)
         text_view.show()
+
+        dialog.vbox.pack_start(scrolledwindow)
+        scrolledwindow.show()
 
         if dialog.run() == gtk.RESPONSE_OK:
             buf = text_view.get_buffer()
@@ -254,7 +274,7 @@ class AutomakeRelease(Release):
         Release.__init__(self)
 
         self.config_path = 'configure.ac'
-        self.name_regexp = 'AC_INIT\(\[(.*?)\]'
+        self.name_regexp = 'AC_INIT\(\[(.*)\],\[(.*)\],\[(.*)\],\[(.*?)\]'
         self.version_regexp = 'AC_INIT\(\[.*?\],\[(.*?)\]'
         self.tarball_command = ['make', 'distcheck']
 
@@ -272,6 +292,8 @@ def main():
         print 'Unknow module type.'
 
     release.read_config()
+    if options.version is None:
+        release.check_version(options)
 
     print 'Bump version number...'
     release.bump_version(options.version)
