@@ -293,7 +293,7 @@ def main():
 
     release.read_config()
     if options.version is None:
-        release.check_version(options)
+        release.check_version()
 
     print 'Bump version number...'
     release.bump_version(options.version)
