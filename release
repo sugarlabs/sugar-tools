@@ -212,7 +212,7 @@ class Release(object):
                 out.write('* #%s %s\n' % (number, summary))
 
         if report.testcases:
-            out.write('\n== Test cases ==')
+            out.write('\n== Test cases ==\n\n')
 
             for number, testcase in report.testcases:
                 out.write('#%s\n\n%s\n\n\n' % (number, testcase))
