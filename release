@@ -274,7 +274,7 @@ class AutomakeRelease(Release):
         Release.__init__(self)
 
         self.config_path = 'configure.ac'
-        self.name_regexp = 'AC_INIT\(\[(.*)\],\[(.*)\],\[(.*)\],\[(.*?)\]'
+        self.name_regexp = 'AC_INIT\(\[.*?\],\[.*?\],\[.*?\],\[(.*?)\]'
         self.version_regexp = 'AC_INIT\(\[.*?\],\[(.*?)\]'
         self.tarball_command = ['make', 'distcheck']
 
@@ -289,7 +289,7 @@ def main():
     elif os.path.exists('setup.py'):
         release = ActivityRelease()
     else:
-        print 'Unknow module type.'
+        print 'Unknown module type.'
 
     release.read_config()
     if options.version is None:
