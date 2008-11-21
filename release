@@ -33,7 +33,7 @@ import StringIO
 upload_host = 'dev.laptop.org'
 upload_root = '/var/www/sugar/sources'
 download_uri = 'http://dev.laptop.org/pub/sugar/sources/'
-announce_to = 'sugar@laptop.org'
+announce_to = 'sugar-devel@lists.sugarlabs.org'
 
 class ReleaseReport(object):
     def __init__(self, version):
