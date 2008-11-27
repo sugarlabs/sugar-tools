@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+# Copyright (C) 2008, Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+import os
+import shutil
+import subprocess
+import tempfile
+
+target_repo = \
+    'sugarlabs.org:/var/www-sugarlabs/download/sugar/repos/fedora-10-i386'
+
+def fetch(packages):
+    for pkg in packages:
+        subprocess.check_call(['koji', 'download-build', '--arch=src',
+                               '--latestfrom=dist-f11', pkg])
+
+def mockbuild(repo_path):
+    subprocess.check_call(['mock', '--init'])
+
+    for f in os.listdir('.'):
+        print 'Rebuilding %s...' % f
+        subprocess.check_call(['mock', '--no-clean', '--no-cleanup-after',
+                                '--rebuild', '--resultdir', repo_path, f])
+
+def createrepo(repo_path):
+    subprocess.check_call(['createrepo', repo_path])
+    subprocess.check_call(['rsync', '-rv', '--delete',
+                           repo_path + '/', target_repo])
+
+def rebuild(packages):
+    old_cwd = os.getcwd()
+
+    path = tempfile.mkdtemp()
+    os.chdir(path)
+
+    repo_path = tempfile.mkdtemp()
+
+    try:
+        fetch(packages)
+        mockbuild(repo_path)
+        createrepo(repo_path)
+    finally:
+        shutil.rmtree(path)
+        shutil.rmtree(repo_path)
+        os.chdir(old_cwd)
+
+rebuild(['sugar-artwork', 'sugar-presence-service', 'sugar', 'sugar-datastore',
+         'sugar-base', 'sugar-toolkit'])
