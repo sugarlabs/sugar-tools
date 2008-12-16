@@ -29,17 +29,17 @@ def fetch(packages):
                                '--latestfrom=dist-f11', pkg])
 
 def mockbuild(repo_path):
-    subprocess.check_call(['mock', '--init'])
+    rpms = os.listdir('.')
+    rpms.sort(lambda x,y: cmp(os.path.getmtime(x), os.path.getmtime(y)))
 
-    for f in os.listdir('.'):
+    for f in rpms:
         print 'Rebuilding %s...' % f
-        subprocess.check_call(['mock', '--no-clean', '--no-cleanup-after',
-                                '--rebuild', '--resultdir', repo_path, f])
+        subprocess.check_call(['mock', '--rebuild', '--resultdir',
+                               repo_path, f])
 
-def createrepo(repo_path):
-    subprocess.check_call(['createrepo', repo_path])
-    subprocess.check_call(['rsync', '-rv', '--delete',
-                           repo_path + '/', target_repo])
+        subprocess.check_call(['createrepo', repo_path])
+        subprocess.check_call(['rsync', '-rv', '--delete',
+                               repo_path + '/', target_repo])
 
 def rebuild(packages):
     old_cwd = os.getcwd()
@@ -47,16 +47,17 @@ def rebuild(packages):
     path = tempfile.mkdtemp()
     os.chdir(path)
 
-    repo_path = tempfile.mkdtemp()
+    repo_path = os.path.join(old_cwd, 'repo')
+    if not os.path.exists(repo_path):
+        os.mkdir(repo_path)
 
     try:
         fetch(packages)
         mockbuild(repo_path)
-        createrepo(repo_path)
     finally:
         shutil.rmtree(path)
-        shutil.rmtree(repo_path)
         os.chdir(old_cwd)
 
 rebuild(['sugar-artwork', 'sugar-presence-service', 'sugar', 'sugar-datastore',
-         'sugar-base', 'sugar-toolkit'])
+         'sugar-base', 'sugar-toolkit', 'dbus-glib', 'telepathy-glib',
+         'telepathy-gabble'])
