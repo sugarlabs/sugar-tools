@@ -21,7 +21,7 @@ import subprocess
 import tempfile
 
 target_repo = \
-    'sugarlabs.org:/var/www-sugarlabs/download/sugar/repos/fedora-10-i386'
+    'sugarlabs.org:~/public_html/fedora-10-i386'
 
 def fetch(packages):
     for pkg in packages:
