@@ -30,9 +30,9 @@ import sys
 import urllib
 import StringIO
 
-upload_host = 'dev.laptop.org'
-upload_root = '/var/www/sugar/sources'
-download_uri = 'http://dev.laptop.org/pub/sugar/sources/'
+upload_host = 'shell.sugarlabs.org'
+upload_root = '/pub/sugarlabs/sources/sucrose'
+download_uri = 'http://download.sugarlabs.org/sources/sucrose/'
 announce_to = 'sugar-devel@lists.sugarlabs.org'
 
 class ReleaseReport(object):
