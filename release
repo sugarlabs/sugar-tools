@@ -254,7 +254,8 @@ class Release(object):
             subprocess.check_call(['scp', announce_filename,
                                    upload_host + ':~'])
             subprocess.check_call(['ssh', upload_host,
-                                   'sendmail', '-t', '<', announce_filename])
+                                   '/usr/sbin/sendmail', '-t', '<', 
+                                   announce_filename])
             subprocess.check_call(['ssh', upload_host,
                                    'rm', announce_filename])
 
