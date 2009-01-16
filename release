@@ -31,7 +31,7 @@ import urllib
 import StringIO
 
 upload_host = 'shell.sugarlabs.org'
-upload_root = '/pub/sugarlabs/sources/sucrose'
+upload_root = '/upload/sources/sucrose'
 download_uri = 'http://download.sugarlabs.org/sources/sucrose/'
 announce_to = 'sugar-devel@lists.sugarlabs.org'
 
