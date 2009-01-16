@@ -73,7 +73,7 @@ class ReleaseReport(object):
                 tickets.append(match.group(1))
 
         for n in tickets:
-            f = urllib.urlopen('http://dev.laptop.org/ticket/%s?format=csv' % n)
+            f = urllib.urlopen('http://dev.sugarlabs.org/ticket/%s?format=csv' % n)
 
             reader = csv.DictReader(f)
             row = reader.next()
@@ -84,7 +84,7 @@ class ReleaseReport(object):
     
             f.close()
 
-            url = 'http://dev.laptop.org/ticket/%s?format=rss' % n
+            url = 'http://dev.sugarlabs.org/ticket/%s?format=rss' % n
 
             parser = feedparser.parse(url)
 
