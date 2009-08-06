@@ -206,7 +206,7 @@ class Release(object):
         report.generate()
 
         if report.tickets:
-            out.write('\n== Fixed tickets ==\n\n')
+            out.write('\n== News ==\n\n')
 
             for ticket in report.tickets:
                 number = ticket['number']
