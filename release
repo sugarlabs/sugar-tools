@@ -212,7 +212,7 @@ class Release(object):
                 number = ticket['number']
                 summary = ticket['summary']
 
-                out.write('* #%s %s\n' % (number, summary))
+                out.write('* %s #%s\n' % (summary, number))
 
         if report.testcases:
             out.write('\n== Test cases ==\n\n')
