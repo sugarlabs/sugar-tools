@@ -94,6 +94,9 @@ class ReleaseReport(object):
                 writer = formatter.DumbWriter(out)
                 form = formatter.AbstractFormatter(writer)
 
+                entry['summary_detail']['value'] = \
+                    entry['summary_detail']['value'].replace('&nbsp;', ' ')
+
                 html_parser = htmllib.HTMLParser(form)
                 html_parser.feed(entry['summary_detail']['value'])
                 html_parser.close()
