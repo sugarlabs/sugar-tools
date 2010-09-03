@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2008, Red Hat, Inc.
+# Copyright (C) 2010 One Laptop per Child
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +39,7 @@ announce_to = 'sugar-devel@lists.sugarlabs.org'
 class ReleaseReport(object):
     def __init__(self, version):
         self.version = version
-        self.tickets = []
+        self.commits = []
         self.testcases = []
 
     def generate(self):
@@ -59,54 +60,10 @@ class ReleaseReport(object):
         else:
             interval = release_tag
 
-        p = subprocess.Popen(['git', 'log', interval,
-                              '--pretty=format:%an|||%s'],
+        p = subprocess.Popen(['git', 'log', interval, '--no-merges',
+                              '--pretty=format:%s (%an)'],
                              stdout=subprocess.PIPE)
-        commits = p.stdout.read().split('\n')
-
-        tickets = []
-        for row in commits:
-            author, subject = row.split('|||')
-
-            match = re.search("\#([0-9]*)", subject)
-            if match:
-                tickets.append(match.group(1))
-
-        for n in tickets:
-            f = urllib.urlopen('http://dev.sugarlabs.org/ticket/%s?format=csv' % n)
-
-            reader = csv.DictReader(f)
-            row = reader.next()
-
-            ticket = { 'number'  : row['id'],
-                       'summary' : row['summary'] }
-            self.tickets.append(ticket)
-    
-            f.close()
-
-            url = 'http://dev.sugarlabs.org/ticket/%s?format=rss' % n
-
-            parser = feedparser.parse(url)
-
-            for entry in parser.entries:
-                out = StringIO.StringIO()
-
-                writer = formatter.DumbWriter(out)
-                form = formatter.AbstractFormatter(writer)
-
-                html_parser = htmllib.HTMLParser(form)
-                html_parser.feed(entry['summary_detail']['value'])
-                html_parser.close()
-
-                comment = out.getvalue().strip()
-
-                out.close()
-
-                marker = '|testcase|'
-                i = comment.lower().find(marker)
-                if i >= 0:
-                    i += len(marker)
-                    self.testcases.append([n, comment[i:].strip()])
+        self.commits = p.stdout.read()
 
 class Release(object):
     def __init__(self):
@@ -205,20 +162,9 @@ class Release(object):
         report = ReleaseReport(self.version)
         report.generate()
 
-        if report.tickets:
+        if report.commits:
             out.write('\n== News ==\n\n')
-
-            for ticket in report.tickets:
-                number = ticket['number']
-                summary = ticket['summary']
-
-                out.write('* %s #%s\n' % (summary, number))
-
-        if report.testcases:
-            out.write('\n== Test cases ==\n\n')
-
-            for number, testcase in report.testcases:
-                out.write('#%s\n\n%s\n\n\n' % (number, testcase))
+            out.write(report.commits)
 
         announce = out.getvalue()
         out.close()
