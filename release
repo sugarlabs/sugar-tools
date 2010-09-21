@@ -39,7 +39,7 @@ announce_to = 'sugar-devel@lists.sugarlabs.org'
 class ReleaseReport(object):
     def __init__(self, version):
         self.version = version
-        self.commits = []
+        self.commits = ''
         self.testcases = []
 
     def generate(self):
@@ -64,8 +64,9 @@ class ReleaseReport(object):
                               '--pretty=format:%s (%an)'],
                              stdout=subprocess.PIPE)
 
-        self.commits = p.stdout.read()
-
+        lines = p.stdout.readlines()
+        for line in lines:
+            self.commits += '* ' + line
 
 class Release(object):
     def __init__(self):
