@@ -16,19 +16,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import csv
-import feedparser
-import fileinput
-import formatter
 import gtk
-import htmllib
 import optparse
 import os
 import re
-import smtplib
 import subprocess
 import sys
-import urllib
 import StringIO
 
 upload_host = 'shell.sugarlabs.org'
@@ -237,7 +230,7 @@ def main():
     parser = optparse.OptionParser()
     parser.add_option('-v', '--version', dest='version',
                       help='Release version')
-    (options, args) = parser.parse_args()
+    (options, args_) = parser.parse_args()
 
     if os.path.exists('configure.ac'):
         release = AutomakeRelease()
