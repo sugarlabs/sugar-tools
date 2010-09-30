@@ -76,14 +76,12 @@ class Release(object):
         self.version = m.group(1)
 
     def check_version(self):
-        p = subprocess.Popen(['git', 'tag'], stdout=subprocess.PIPE)
-        tags = p.stdout.read().split('\n')
-        tags = [tag for tag in tags if tag != '' ]
-        tags.sort(key=lambda x: int(str.replace(x, 'v', '')))
-        latest_tag = tags[-1]
-        if latest_tag.startswith('v'):
-            latest_tag = latest_tag[1:]
-        if latest_tag != self.version:
+        p = subprocess.Popen(['git', 'describe', '--tags', '--abbrev=0'],
+                             stdout=subprocess.PIPE)
+        last_tag = p.stdout.read().strip('\n')
+        if last_tag.startswith('v'):
+            last_tag = last_tag[1:]
+        if last_tag != self.version:
             print 'Warning: Tag (%s) does not match version number (%s)' \
                 % (latest_tag, self.version)
             print 'You can use the --version option to force a specific version'
