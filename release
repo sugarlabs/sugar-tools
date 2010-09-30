@@ -86,6 +86,7 @@ class Release(object):
         p = subprocess.Popen(['git', 'tag'], stdout=subprocess.PIPE)
         tags = p.stdout.read().split('\n')
         tags = [tag for tag in tags if tag != '' ]
+        tags.sort(key=lambda x: int(str.replace(x, 'v', '')))
         latest_tag = tags[-1]
         if latest_tag.startswith('v'):
             latest_tag = latest_tag[1:]
