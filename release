@@ -29,20 +29,18 @@ upload_root = '/upload/sources/sucrose'
 download_uri = 'http://download.sugarlabs.org/sources/sucrose/'
 announce_to = 'sugar-devel@lists.sugarlabs.org'
 
+
 class ReleaseReport(object):
-    def __init__(self, version):
-        self.version = version
+    def __init__(self, version, last_tag):
+        self._version = version
+        self._last_tag = last_tag
         self.commits = ''
-        self.testcases = []
 
     def generate(self):
-        p = subprocess.Popen(['git', 'describe', '--tags', '--abbrev=0'],
-                             stdout=subprocess.PIPE)
-        last_tag = p.stdout.read().strip('\n')
-        release_tag = 'v' + self.version
+        release_tag = 'v' + self._version
 
-        if last_tag:
-            interval = last_tag + '..' + release_tag
+        if self._last_tag:
+            interval = self._last_tag + '..' + release_tag
         else:
             interval = release_tag
 
@@ -54,10 +52,12 @@ class ReleaseReport(object):
         for line in lines:
             self.commits += '* ' + line
 
+
 class Release(object):
     def __init__(self):
-        self.name = None
+        self._name = None
         self.version = None
+        self.last_tag = None
 
         user, err_ = subprocess.Popen(['git', 'config', 'user.name'],
                                       stdout=subprocess.PIPE).communicate()
@@ -70,20 +70,23 @@ class Release(object):
         config = open(self.config_path).read()
 
         m = re.search(self.name_regexp, config)
-        self.name = m.group(1)
+        self._name = m.group(1)
 
         m = re.search(self.version_regexp, config)
         self.version = m.group(1)
 
-    def check_version(self):
+    def get_latest_tag(self):
         p = subprocess.Popen(['git', 'describe', '--tags', '--abbrev=0'],
                              stdout=subprocess.PIPE)
-        last_tag = p.stdout.read().strip('\n')
-        if last_tag.startswith('v'):
+        self.last_tag = p.stdout.read().strip('\n')
+
+    def check_version(self):
+        last_tag = self.last_tag
+        if self.last_tag.startswith('v'):
             last_tag = last_tag[1:]
         if last_tag != self.version:
             print 'Warning: Tag (%s) does not match version number (%s)' \
-                % (latest_tag, self.version)
+                % (last_tag, self.version)
             print 'You can use the --version option to force a specific version'
             sys.exit(1)
 
@@ -124,14 +127,14 @@ class Release(object):
         return ret == 0
 
     def get_tarball_name(self):
-        return '%s-%s.tar.bz2' % (self.name.replace(' ', ''), self.version)
+        return '%s-%s.tar.bz2' % (self._name.replace(' ', ''), self.version)
 
     def get_tarball_path(self):
         return self.get_tarball_name()
 
     def upload(self):
         upload_path = os.path.join(upload_root, self.path_differentiator, 
-                                   self.name.replace(' ', ''))
+                                   self._name.replace(' ', ''))
         upload_dest = upload_host + ':' + upload_path
 
         subprocess.check_call(['ssh', upload_host, 'mkdir', '-m', '775',
@@ -142,12 +145,12 @@ class Release(object):
         out = StringIO.StringIO()
 
         out.write('== Source ==\n\n')
-        path = os.path.join(self.path_differentiator, self.name, 
+        path = os.path.join(self.path_differentiator, self._name, 
                             self.get_tarball_name())
 
         out.write(download_uri + path + '\n')
 
-        report = ReleaseReport(self.version)
+        report = ReleaseReport(self.version, self.last_tag)
         report.generate()
 
         if report.commits:
@@ -177,7 +180,7 @@ class Release(object):
         if dialog.run() == gtk.RESPONSE_OK:
             buf = text_view.get_buffer()
             text = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
-            subject = '[RELEASE] %s-%s' % (self.name, self.version)
+            subject = '[RELEASE] %s-%s' % (self._name, self.version)
 
             announce_filename = '.sugar-announce'
             f = open(announce_filename, 'w')
@@ -195,6 +198,7 @@ class Release(object):
 
             os.unlink(announce_filename)
 
+
 class ActivityRelease(Release):
     def __init__(self):
         Release.__init__(self)
@@ -208,6 +212,7 @@ class ActivityRelease(Release):
     def get_tarball_path(self):
         return os.path.join('dist', self.get_tarball_name())
 
+
 class AutomakeRelease(Release):
     def __init__(self):
         Release.__init__(self)
@@ -217,6 +222,7 @@ class AutomakeRelease(Release):
         self.version_regexp = 'AC_INIT\(\[.*?\],\[(.*?)\]'
         self.tarball_command = ['make', 'distcheck']
         self.path_differentiator = 'glucose'
+
 
 def main():
     parser = optparse.OptionParser()
@@ -230,8 +236,10 @@ def main():
         release = ActivityRelease()
     else:
         print 'Unknown module type.'
+        sys.exit(1)
 
     release.read_config()
+    release.get_latest_tag()
     if options.version is None:
         release.check_version()
 
@@ -255,5 +263,5 @@ def main():
 
     print 'Announce the release...'
     release.announce()
-
+    
 main()
