@@ -119,7 +119,7 @@ class Release(object):
         subprocess.check_call(['git', 'tag', 'v%s' % self.version])
 
     def push(self):
-        subprocess.check_call(['git', 'push', 'origin', 'master'])
+        subprocess.check_call(['git', 'push', 'origin', 'HEAD'])
         subprocess.check_call(['git', 'push', '--tags'])
 
     def build_tarball(self):
