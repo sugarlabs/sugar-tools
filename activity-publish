@@ -1,0 +1,157 @@
+#!/usr/bin/python
+# Copyright (C) 2018 One Laptop per Child, Inc
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+import os
+import ConfigParser
+import requests
+from lxml import html
+
+# configuration file must contain
+# [server]
+# username = something
+# password = something
+
+uc = ConfigParser.ConfigParser()
+uc.read(os.path.join(os.getenv('HOME'), '.sugar-activity-publish.conf'))
+username = uc.get('server', 'username')
+password = uc.get('server', 'password')
+
+# activity configuration file
+
+cp = ConfigParser.ConfigParser()
+cp.read('activity/activity.info')
+
+A = cp.get('Activity', 'name')
+V = cp.get('Activity', 'activity_version')
+
+G = os.path.basename(cp.get('Activity', 'repository')).split('.')[0]
+
+# todo; get addon number from config
+ns = {
+    'Write': 4201,
+    'Speak': 4038,
+    'Memorize': 4063,
+    'StopWatch': 4263,
+    'Story': 4565,
+    'Portfolio': 4437,
+    }
+
+N = ns[A]
+
+# release notes file
+
+notes = file('RELEASE-NOTES', 'r').read()
+
+# begin a session
+
+s = requests.Session()
+
+print 'visit'
+u = 'https://activities.sugarlabs.org/en-US/sugar/'
+r = s.get(u)
+
+print 'click login'
+u = 'https://activities.sugarlabs.org/en-US/sugar/users/login?to=en-US%2Fsugar%2F'
+r = s.get(u)
+
+print 'try login'
+u = 'https://activities.sugarlabs.org/en-US/sugar/users/login'
+p = {
+    'data[Login][referer]': 'en-US/sugar/',
+    'data[Login][email]': username,
+    'data[Login][password]': password}
+r = s.post(u, data=p)
+
+if r.status_code != 200:
+    print 'fail, bad status', repr(r.status_code)
+    exit(1)
+
+if 'AMOv3' not in s.cookies:
+    print 'fail, no cookie'
+    exit(1)
+
+print 'logged in,', s.cookies['AMOv3']
+
+print 'visit addon'
+u = 'https://activities.sugarlabs.org/en-US/developers/versions/add/%d' % N
+r = s.get(u)
+
+if r.status_code != 200:
+    print 'fail, bad status', repr(r.status_code)
+    exit(1)
+
+# extract sessionCheck and other values
+tree = html.fromstring(r.content)
+h = tree.find_class('hsession')[0]
+i = h.getchildren()[0]
+k = i.values()[2]
+print "sessionCheck", k
+
+u = 'https://activities.sugarlabs.org/en-US/developers/json/fileupload/update'
+p = {
+    'data[appversion_min]': '109',  # 0.98
+    'data[appversion_max]': '116',  # 0.112
+    'data[Version][releasenotes][en-US]': notes,
+    'sessionCheck': k,
+    'data[Addon][id]': '%d' % N,
+    'data[Version][id]': '',
+    'data[File][id]': '',
+    }
+
+n = '%s-%s.xo' % (A, V)
+
+f = {
+    "file": (n, open('dist/%s' % n, 'rb'), 'application/octet-stream'),
+    }
+
+print 'upload'
+r = s.post(u, data=p, files=f)
+
+if r.status_code != 200:
+    print repr(r.status_code)
+    exit(1)
+
+print 'upload ok'
+
+print r.text
+
+u = 'https://activities.sugarlabs.org/en-US/developers/verify/-1/1/1/%s' % n
+r = s.get(u)
+
+if r.status_code != 200:
+    print 'fail, bad status', repr(r.status_code)
+    exit(1)
+
+print r.text
+
+# todo; parse and report failures that may be returned at this point;
+# such as bad license
+
+u = 'https://activities.sugarlabs.org/en-US/developers/json/complete/update/%s' % n
+r = s.get(u)
+
+if r.status_code != 200:
+    print 'fail, bad status', repr(r.status_code)
+    exit(1)
+
+print r.text
+
+print ''
+print 'http://activities.sugarlabs.org/en-US/sugar/addon/%s' % N
+
+# todo; visit above URL to confirm version has changed
