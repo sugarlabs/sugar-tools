@@ -127,7 +127,7 @@ class Release(object):
         return ret == 0
 
     def get_tarball_name(self):
-        return '%s-%s.tar.bz2' % (self._name.replace(' ', ''), self.version)
+        return '%s-%s.tar.xz' % (self._name.replace(' ', ''), self.version)
 
     def get_tarball_path(self):
         return self.get_tarball_name()
