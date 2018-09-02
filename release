@@ -139,7 +139,7 @@ class Release(object):
 
         subprocess.check_call(['ssh', upload_host, 'mkdir', '-m', '775',
                                '-p', upload_path])
-        subprocess.check_call(['scp', self.get_tarball_path(), upload_dest])
+        subprocess.check_call(['rsync', self.get_tarball_path(), upload_dest])
 
     def announce(self):
         out = StringIO.StringIO()
