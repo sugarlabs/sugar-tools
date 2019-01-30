@@ -113,7 +113,7 @@ p = {
     'data[File][id]': '',
     }
 
-n = '%s-%s.xo' % (A, V)
+n = '%s-%s.xo' % (A.replace(' ', ''), V)
 
 f = {
     "file": (n, open('dist/%s' % n, 'rb'), 'application/octet-stream'),
