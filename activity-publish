@@ -49,6 +49,20 @@ ns = {
     'StopWatch': 4263,
     'Story': 4565,
     'Portfolio': 4437,
+    'Poll': 4074,
+    'Pippy': 4041,
+    'Physics': 4193,
+    'Implode': 4086,
+    'Paint': 4082,
+    'Measure': 4197,
+    'Maze': 4071,
+    'Log': 4056,
+    'Letters': 4477,
+    'Jukebox': 4045,
+    'Image Viewer': 4032,
+    'Get Books': 4304,
+    'Terminal': 4043,
+    'Moon': 4034,
     }
 
 N = ns[A]
