@@ -63,6 +63,10 @@ ns = {
     'Get Books': 4304,
     'Terminal': 4043,
     'Moon': 4034,
+    'Clock': 4191,
+    'Calculate': 4076,
+    'Chat': 4069,
+    'Level': 4628,
     }
 
 N = ns[A]
