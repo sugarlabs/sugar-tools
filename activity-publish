@@ -123,7 +123,7 @@ print "sessionCheck", k
 u = 'https://activities.sugarlabs.org/en-US/developers/json/fileupload/update'
 p = {
     'data[appversion_min]': '109',  # 0.98
-    'data[appversion_max]': '116',  # 0.112
+    'data[appversion_max]': '117',  # 0.113
     'data[Version][releasenotes][en-US]': notes,
     'sessionCheck': k,
     'data[Addon][id]': '%d' % N,
