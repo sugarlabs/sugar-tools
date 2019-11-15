@@ -178,4 +178,25 @@ print r.text
 print ''
 print 'http://activities.sugarlabs.org/en-US/sugar/addon/%s' % N
 
-# todo; visit above URL to confirm version has changed
+# good response looks like this (status 4);
+# <script id="json">{"file_id":-1,"file_name":"Jukebox-34.xo","addon_type":"1","uploadtype":"update"}</script>
+# {"validation_disabled":1}
+# <script id="json">{"error":0,"uploadtype":"update","addon_id":"4045","version_id":"32331","file_id":"29336","version":"34","status":"4","queuecount":6}</script>
+# next action; none
+
+# less good response looks like this (status 2):
+# <script id="json">{"file_id":-1,"file_name":"Chart-12.1.xo","addon_type":"1","uploadtype":"update"}</script>
+# {"validation_disabled":1}
+# <script id="json">{"error":0,"uploadtype":"update","addon_id":"4534","version_id":"32352","file_id":"29357","version":"12.1","status":"2","queuecount":6}</script>
+# next action; use editor mode, pending updates, approve
+
+# a bad response looks like this (addon_id null, status 1);
+# <script id="json">{"file_id":-1,"file_name":"17426800 1540606366.xo","addon_type":"1","uploadtype":"update"}</script>
+# {"validation_disabled":1}
+# <script id="json">{"error":0,"uploadtype":"update","addon_id":null,"version_id":null,"file_id":null,"version":"","status":"1","queuecount":6}</script>
+# next action; server sometimes fails to take action on upload, fix is
+# to remove files from server temp directory,
+# /srv/www-sugarlabs/activities/files/temp and then retry
+
+
+exit(0)
