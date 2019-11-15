@@ -39,6 +39,10 @@ cp.read('activity/activity.info')
 A = cp.get('Activity', 'name')
 V = cp.get('Activity', 'activity_version')
 
+if 'sugar-activity3' in cp.get('Activity', 'exec'):
+    print "activities.sugarlabs.org does not host python 3 activities"
+    exit(1)
+
 G = os.path.basename(cp.get('Activity', 'repository')).split('.')[0]
 
 # todo; get addon number from config
