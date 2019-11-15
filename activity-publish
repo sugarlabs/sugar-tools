@@ -71,6 +71,8 @@ ns = {
     'Calculate': 4076,
     'Chat': 4069,
     'Level': 4628,
+    'FractionBounce': 4488,
+    'Chart': 4534,
     }
 
 N = ns[A]
