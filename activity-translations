@@ -20,6 +20,22 @@ if [ ! -e po ]; then
     exit 2
 fi
 
+# check for tools needed
+if [ ! -e /usr/bin/pcregrep ]; then
+    echo please install pcregrep
+    exit 2
+fi
+
+if [ ! -e /usr/bin/wget ]; then
+    echo please install wget
+    exit 2
+fi
+
+if [ ! -e /usr/bin/unzip ]; then
+    echo please install unzip
+    exit 2
+fi
+
 # fetch latest translations
 cd po
 wget -q https://translate.sugarlabs.org/projects/$A/
