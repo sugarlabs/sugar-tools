@@ -33,5 +33,13 @@ for x in $(grep "/$A/translate/\"" index.html | \
 done
 rm index.html
 
-# your next step; review and commit the changes, then
-# run genpot target, review commit the changes if substantial
+# remove empty translations
+rm -v $(find . -type f -name '*.po' -not -execdir pcregrep -qM '^msgstr[^:]* "([^"]|"\n"(?!Project-Id-Version:))' '{}' ';' -print | sort)
+
+
+# your next steps;
+#
+# review and commit the changes,
+# run setup.py genpot, review, and commit the changes
+#
+# please discard trivial changes, to avoid git commit noise
