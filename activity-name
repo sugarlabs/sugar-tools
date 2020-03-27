@@ -1,0 +1,16 @@
+#!/usr/bin/python
+import argparse, os, ConfigParser
+
+parser = argparse.ArgumentParser(description='show sugar activity name')
+parser.add_argument('file', nargs='?', type=str, help='activity info file',
+                        default='activity/activity.info')
+parser.add_argument('--collapse', action='store_true',
+                        help='collapse whitespace')
+args = parser.parse_args()
+
+cp = ConfigParser.ConfigParser()
+cp.read(args.file)
+name = cp.get('Activity', 'name')
+if args.collapse:
+    name = name.replace(' ', '')
+print name
