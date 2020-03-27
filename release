@@ -16,13 +16,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import gtk
 import optparse
 import os
 import re
 import subprocess
 import sys
 import StringIO
+
+from gi.repository import Gtk
 
 upload_host = 'shell.sugarlabs.org'
 upload_root = '/upload/sources/sucrose'
@@ -160,16 +161,16 @@ class Release(object):
         announce = out.getvalue()
         out.close()
 
-        dialog = gtk.Dialog()
+        dialog = Gtk.Dialog.new()
         dialog.set_default_size(400, 400)
-        dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                           'Announce', gtk.RESPONSE_OK)
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                           'Announce', Gtk.ResponseType.OK)
 
-        scrolledwindow = gtk.ScrolledWindow()
-        scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC,
-                                  gtk.POLICY_AUTOMATIC)
+        scrolledwindow = Gtk.ScrolledWindow()
+        scrolledwindow.set_policy(Gtk.PolicyType.AUTOMATIC,
+                                  Gtk.PolicyType.AUTOMATIC)
 
-        text_view = gtk.TextView()
+        text_view = Gtk.TextView.new()
         text_view.get_buffer().set_text(announce)
         scrolledwindow.add_with_viewport(text_view)
         text_view.show()
@@ -177,7 +178,7 @@ class Release(object):
         dialog.vbox.pack_start(scrolledwindow)
         scrolledwindow.show()
 
-        if dialog.run() == gtk.RESPONSE_OK:
+        if dialog.run() == Gtk.ResponseType.OK:
             buf = text_view.get_buffer()
             text = buf.get_text(buf.get_start_iter(), buf.get_end_iter())
             subject = '[RELEASE] %s-%s' % (self._name, self.version)
