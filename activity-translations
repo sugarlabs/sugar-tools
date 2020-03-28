@@ -51,6 +51,11 @@ fi
 # fetch latest translations
 cd po
 wget -q https://translate.sugarlabs.org/projects/$A/
+if [ $? -ne 0 ]; then
+    echo  "Incorrect ProjectName, check if ProjectName is one listed on translate.sugarlabs.org"
+    exit 2
+fi
+
 for x in $(grep "/$A/translate/\"" index.html | \
 	   cut -d/ -f2 | grep -v projects); do
 
