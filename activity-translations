@@ -6,6 +6,17 @@
 #        where ProjectName is one listed on translate.sugarlabs.org
 #
 
+usage(){
+    echo "usage: activity-translations ProjectName
+       where ProjectName is one listed on translate.sugarlabs.org"
+}
+
+# abandon if ProjectName argument isn't given
+if [ $# -eq 0 ]; then
+   usage
+   exit 2
+fi
+
 A=$1
 
 # abandon if there is no activity metadata here
@@ -35,6 +46,7 @@ if [ ! -e /usr/bin/unzip ]; then
     echo please install unzip
     exit 2
 fi
+
 
 # fetch latest translations
 cd po
