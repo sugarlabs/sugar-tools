@@ -1,0 +1,30 @@
+#!/bin/sh
+ACTIVITY=$(activity-name --collapse)
+
+OPTIONS="--recursive --checksum --delete"
+if [ "$1" = "--no-excludes" -o "$1" = "--git" ]; then
+    shift
+else
+    OPTIONS="$OPTIONS --exclude=.git --exclude=dist"
+fi
+echo $OPTIONS
+
+HOST=$1
+if [ -z $HOST ]; then
+    echo no host
+    exit 1
+fi
+shift
+
+PACK=/usr/share/sugar/activities/$ACTIVITY.activity
+case $HOST in
+    fedora18*)
+	PACK=/home/olpc/Activities/$ACTIVITY.activity
+	;;
+esac
+
+echo $HOST:$PACK
+while true; do
+    rsync $OPTIONS . $HOST:$PACK/
+    inotifywait -e close_write -r .
+done
