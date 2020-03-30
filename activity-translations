@@ -51,8 +51,13 @@ fi
 # fetch latest translations
 cd po
 wget -q https://translate.sugarlabs.org/projects/$A/
-if [ $? -ne 0 ]; then
-    echo  "Incorrect ProjectName, check if ProjectName is one listed on translate.sugarlabs.org"
+wget_output=$?
+if [ "$wget_output" -ne 0 ] ; then
+    echo  "Translations could not be fetched.\n"
+        if [ "$wget_output" -eq 8 ]; then
+        echo  "Incorrect ProjectName, check if ProjectName is one listed on translate.sugarlabs.org"
+        exit 2
+        fi
     exit 2
 fi
 
