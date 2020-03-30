@@ -55,8 +55,7 @@ wget_status=$?
 if [ "$wget_status" -ne 0 ] ; then
     echo  "Translations could not be fetched, wget failed."
     if [ "$wget_status" -eq 8 ]; then
-        echo  "Server issued an error response. Checking if ProjectName is one listed on translate.sugarlabs.org might be helpful."
-        exit 2
+        echo  "Server error. Check if ProjectName is correct."
     fi
     exit 2
 fi
