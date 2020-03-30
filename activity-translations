@@ -50,7 +50,16 @@ fi
 
 # fetch latest translations
 cd po
-wget -q https://translate.sugarlabs.org/projects/$A/
+wget https://translate.sugarlabs.org/projects/$A/
+wget_status=$?
+if [ "$wget_status" -ne 0 ] ; then
+    echo  "Translations could not be fetched, wget failed."
+    if [ "$wget_status" -eq 8 ]; then
+        echo  "Server error. Check if ProjectName is correct."
+    fi
+    exit 2
+fi
+
 for x in $(grep "/$A/translate/\"" index.html | \
 	   cut -d/ -f2 | grep -v projects); do
 
