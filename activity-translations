@@ -71,7 +71,7 @@ done
 rm index.html
 
 # remove empty translations
-rm -v $(find . -type f -name '*.po' -not -execdir pcregrep -qM '^msgstr[^:]* "([^"]|"\n"(?!Project-Id-Version:))' '{}' ';' -print | sort)
+rm -f $(find . -type f -name '*.po' -not -execdir pcregrep -qM '^msgstr[^:]* "([^"]|"\n"(?!Project-Id-Version:))' '{}' ';' -print | sort)
 
 
 # your next steps;
