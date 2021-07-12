@@ -72,7 +72,7 @@ rm index.html
 
 # remove empty translations
 rm -f $(find . -type f -name '*.po' -not -execdir pcregrep -qM '^msgstr[^:]* "([^"]|"\n"(?!Project-Id-Version:))' '{}' ';' -print | sort)
-
+echo "Done! Synchronized with translate.sugarlabs.org"
 
 # your next steps;
 #
